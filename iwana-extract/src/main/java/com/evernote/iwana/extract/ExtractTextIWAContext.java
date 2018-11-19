@@ -129,7 +129,7 @@ public abstract class ExtractTextIWAContext extends IwanaContext<ExtractTextCall
   @Override
   public void onEndParseIndexZip() {
     // Remove placeholder text
-    removePlaceholderText();
+    //removePlaceholderText();
 
     // Order content
     Message obj = objectStorage.get(1L);

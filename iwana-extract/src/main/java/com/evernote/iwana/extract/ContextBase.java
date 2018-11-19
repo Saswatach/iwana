@@ -15,25 +15,29 @@
  */
 package com.evernote.iwana.extract;
 
+import com.evernote.iwana.MessageActions;
+import com.evernote.iwana.pb.TSCE.TSCEArchives.ASTNodeArrayArchive.ASTNodeArchive;
+import com.evernote.iwana.pb.TSD.TSDArchives.CommentStorageArchive;
+import com.evernote.iwana.pb.TSD.TSDArchives.GroupArchive;
+import com.evernote.iwana.pb.TSK.TSKArchives.DocumentArchive;
+import com.evernote.iwana.pb.TSP.TSPArchiveMessages.ArchiveInfo;
+import com.evernote.iwana.pb.TSP.TSPArchiveMessages.MessageInfo;
+import com.evernote.iwana.pb.TST.TSTArchives;
+import com.evernote.iwana.pb.TST.TSTArchives.TableDataList;
+import com.evernote.iwana.pb.TST.TSTArchives.TableDataList.ListEntry;
+import com.evernote.iwana.pb.TST.TSTArchives.TableDataList.ListType;
+import com.evernote.iwana.pb.TSWP.TSWPArchives.ObjectAttributeTable;
+import com.evernote.iwana.pb.TSWP.TSWPArchives.PlaceholderSmartFieldArchive;
+import com.evernote.iwana.pb.TSWP.TSWPArchives.StorageArchive;
+import com.evernote.iwana.pb.TSWP.TSWPArchives.ObjectAttributeTable.ObjectAttribute;
+import com.google.protobuf.Message;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-
-import com.evernote.iwana.pb.TST.TSTArchives;
 import org.apache.log4j.Logger;
-
-import com.evernote.iwana.MessageActions;
-import com.evernote.iwana.pb.TSD.TSDArchives.GroupArchive;
-import com.evernote.iwana.pb.TSP.TSPArchiveMessages.ArchiveInfo;
-import com.evernote.iwana.pb.TSP.TSPArchiveMessages.MessageInfo;
-import com.evernote.iwana.pb.TSWP.TSWPArchives.ObjectAttributeTable;
-import com.evernote.iwana.pb.TSWP.TSWPArchives.ObjectAttributeTable.ObjectAttribute;
-import com.evernote.iwana.pb.TSWP.TSWPArchives.PlaceholderSmartFieldArchive;
-import com.evernote.iwana.pb.TSWP.TSWPArchives.StorageArchive;
-import com.google.protobuf.Message;
-
 /**
  * Defines common actions for message types that are relevant to text extraction.
  * 
@@ -59,9 +63,7 @@ class ContextBase extends ExtractTextIWAContext {
   public static final MessageActions COMMON_ACTIONS = new MessageActions();
   static {
 
-    //FIXME -- this action on 6005 and 6201 only applies to NumbersContext
-    //Once we figure out how to trigger that correctly, move this back
-    //out of COMMON_ACTIONS to NUMBERS_ACTIONS.
+
     COMMON_ACTIONS.setAction(new int[] {6005, 6201}, new StoreObject<TSTArchives.TableDataList>(
         TSTArchives.TableDataList.PARSER) {
 
@@ -153,6 +155,31 @@ class ContextBase extends ExtractTextIWAContext {
         });
 
     COMMON_ACTIONS.setAction(3008, new StoreObject<GroupArchive>(GroupArchive.PARSER));
+    
+    COMMON_ACTIONS.setAction(200, new ExtractTextActionBase<DocumentArchive>(DocumentArchive.PARSER) {
+    	@Override
+    	protected void onMessage(DocumentArchive message, ArchiveInfo ai, MessageInfo mi, ExtractTextIWAContext context) throws IOException {
+            message.getActivityLogEntriesCount();
+            ((ExtractTextCallback)context.getTarget()).onMetaBlock("ActivityLogCount", String.valueOf(message.getActivityLogEntriesCount()));
+        }
+    });
+    COMMON_ACTIONS.setAction(600, new ExtractTextActionBase<com.evernote.iwana.pb.TSA.TSAArchives.DocumentArchive>(com.evernote.iwana.pb.TSA.TSAArchives.DocumentArchive.PARSER) {
+    	@Override
+    	protected void onMessage(com.evernote.iwana.pb.TSA.TSAArchives.DocumentArchive message, ArchiveInfo ai, MessageInfo mi, ExtractTextIWAContext context) throws IOException {
+            message.getDocumentLanguage();
+            message.getNeedsMovieCompatibilityUpgrade();
+            message.getSerializedSize();
+            ((ExtractTextCallback)context.getTarget()).onMetaBlock("NeedsMovieCompatibilityUpgrade", String.valueOf(message.getNeedsMovieCompatibilityUpgrade()));
+        }
+    });
+    COMMON_ACTIONS.setAction(3056, new ExtractTextActionBase<CommentStorageArchive>(CommentStorageArchive.PARSER) {
+    	@Override
+        protected void onMessage(CommentStorageArchive message, ArchiveInfo ai, MessageInfo mi, ExtractTextIWAContext context) throws IOException {
+            message.toString();
+            ((ExtractTextCallback)context.getTarget()).onMetaBlock("hasCommentsOrAnnotations", "true");
+            ((ExtractTextCallback)context.getTarget()).onMetaBlock("Comments", message.getText());
+        }
+    });
   }
 
   @Override

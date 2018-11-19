@@ -15,6 +15,7 @@
  */
 package com.evernote.iwana.extract;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,6 +35,8 @@ import com.evernote.iwana.pb.KN.KNArchives.SlideArchive;
 import com.evernote.iwana.pb.KN.KNArchives.SlideNodeArchive;
 import com.evernote.iwana.pb.TSD.TSDArchives.DrawableArchive;
 import com.evernote.iwana.pb.TSD.TSDArchives.ShapeArchive;
+import com.evernote.iwana.pb.TSP.TSPArchiveMessages.ArchiveInfo;
+import com.evernote.iwana.pb.TSP.TSPArchiveMessages.MessageInfo;
 import com.evernote.iwana.pb.TSP.TSPMessages.Reference;
 import com.evernote.iwana.pb.TSWP.TSWPArchives.ShapeInfoArchive;
 import com.google.protobuf.Message;
@@ -47,8 +50,7 @@ class KeynoteContext extends ContextBase {
   private static final MessageActions KEYNOTE_ACTIONS = new MessageActions(
       ContextBase.COMMON_ACTIONS);
   static {
-    KEYNOTE_ACTIONS
-        .setAction(1, new StoreObject<DocumentArchive>(DocumentArchive.PARSER));
+   
     KEYNOTE_ACTIONS.setAction(2, new StoreObject<ShowArchive>(ShowArchive.PARSER));
     KEYNOTE_ACTIONS.setAction(4, new StoreObject<SlideNodeArchive>(
         SlideNodeArchive.PARSER));
@@ -59,6 +61,15 @@ class KeynoteContext extends ContextBase {
     KEYNOTE_ACTIONS.setAction(15, new StoreObject<NoteArchive>(NoteArchive.PARSER));
     KEYNOTE_ACTIONS.setAction(2011, new StoreObject<ShapeInfoArchive>(
         ShapeInfoArchive.PARSER));
+    KEYNOTE_ACTIONS.setAction(1, new ExtractTextActionBase<DocumentArchive>(DocumentArchive.PARSER) {
+		@Override
+		protected void onMessage(DocumentArchive message, ArchiveInfo ai, MessageInfo mi, ExtractTextIWAContext context)
+				throws IOException {
+			((ExtractTextCallback)context.getTarget()).onMetaBlock("PreventImageConversionOnOpenning", String.valueOf(message.getSuper().getSuper().getPreventImageConversionOnOpen()));
+            ((ExtractTextCallback)context.getTarget()).onMetaBlock("getNeedsMovieCompatibilityUpgrade", String.valueOf(message.getSuper().getNeedsMovieCompatibilityUpgrade()));
+        			
+		}
+    });
   }
 
   protected KeynoteContext(String documentFilename, ExtractTextCallback target) {
